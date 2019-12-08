@@ -1038,7 +1038,7 @@ public:
         kernelBefore << "\t\t" << className << "_cuda(";
         kernelBefore << "__begin, __end, ";
       } else {
-        kernelBefore << "\t\t" << className << "_all_cuda(";
+        kernelBefore << "\t\t" << className << "_allNodes_cuda(";
       }
       if (!accumulator.empty()) {
         kernelBefore << "__retval, ";
