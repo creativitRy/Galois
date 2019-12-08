@@ -22,6 +22,7 @@
 #include <climits>
 #include <vector>
 #include <unordered_set>
+#include <regex>
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "clang/AST/AST.h"
 #include "clang/AST/ASTConsumer.h"
@@ -348,6 +349,10 @@ public:
       std::size_t end   = text.find_last_of(">");
       text              = text.substr(begin + 1, end - begin - 1);
     }
+
+    // arrays (replace `[num]` with `*`)
+    std::regex array_pattern("\\s*\\[\\d+\\]");
+    text = std::regex_replace(text, array_pattern, "*");
 
     return text;
   }
