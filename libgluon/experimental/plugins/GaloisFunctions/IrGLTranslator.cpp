@@ -350,9 +350,9 @@ public:
       text              = text.substr(begin + 1, end - begin - 1);
     }
 
-    // arrays (replace `[num]` with `*`)
-    std::regex array_pattern("\\s*\\[\\d+\\]");
-    text = std::regex_replace(text, array_pattern, "*");
+    // arrays (replace `[num]` with `*/*ARRAY num*/`)
+    std::regex array_pattern("\\s*\\[(\\d+)\\]");
+    text = std::regex_replace(text, array_pattern, "*/*ARRAY $1*/");
 
     return text;
   }
@@ -965,8 +965,16 @@ public:
                 "MB\\n\", ctx->id, mem_usage/1048756);\n";
     cuheader << "\tload_graph_CUDA_common(ctx, g, num_hosts);\n";
     for (auto& var : SharedVariablesToTypeMap) {
-      cuheader << "\tload_graph_CUDA_field(ctx, &ctx->" << var.first
-               << ", num_hosts);\n";
+      std::regex array_pattern("/*ARRAY (\\d+)*/");
+      std::smatch match;
+      if (std::regex_search(var.second, match, array_pattern)) {
+        std::string array_size_str = match[1];
+        cuheader << "\tload_graph_CUDA_array_field(ctx, &ctx->" << var.first
+                 << ", num_hosts, " << array_size_str << ");\n";
+      } else {
+        cuheader << "\tload_graph_CUDA_field(ctx, &ctx->" << var.first
+                 << ", num_hosts);\n";
+      }
     }
     if (requiresWorklist) {
       cuheader << "\twl->max_size = wl_dup_factor*g.nnodes;\n";
@@ -1186,6 +1194,10 @@ public:
       std::size_t end   = text.find_last_of(">");
       text              = text.substr(begin + 1, end - begin - 1);
     }
+
+    // arrays (replace `[num]` with `*/*ARRAY num*/`)
+    std::regex array_pattern("\\s*\\[(\\d+)\\]");
+    text = std::regex_replace(text, array_pattern, "*/*ARRAY $1*/");
 
     return text;
   }
