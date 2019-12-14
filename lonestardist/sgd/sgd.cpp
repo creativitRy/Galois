@@ -132,7 +132,7 @@ struct InitializeGraph {
       std::string impl_str(syncSubstrate->get_run_identifier("InitializeGraph"));
       galois::StatTimer StatTimer_cuda(impl_str.c_str());
       StatTimer_cuda.start();
-      InitializeGraph_cuda(*allNodes.begin(), *allNodes.end(), cuda_ctx);
+      SGD_InitializeGraph_allNodes_cuda(cuda_ctx);
       StatTimer_cuda.stop();
     } else if (personality == CPU)
 #endif
@@ -178,12 +178,11 @@ struct SGD_mergeResidual {
       galois::StatTimer StatTimer_cuda(impl_str.c_str());
       StatTimer_cuda.start();
       int __retval = 0;
-      SGD_all_cuda(__retval, cuda_ctx);
+      SGD_mergeResidual_allNodes_cuda(cuda_ctx);
       // DGAccumulator_accum += __retval;
       StatTimer_cuda.stop();
     } else if (personality == CPU)
 #endif
-
       galois::do_all(
           galois::iterate(allNodes.begin(), allNodes.end()),
           SGD_mergeResidual{&_graph},
@@ -230,6 +229,16 @@ struct SGD {
       auto step_size = getstep_size(_num_iterations);
       syncSubstrate->set_num_round(_num_iterations);
       dga.reset();
+
+      #ifdef __GALOIS_HET_CUDA__
+      if (personality == GPU_CUDA) {
+        std::string impl_str(syncSubstrate->get_run_identifier("InitializeGraph"));
+        galois::StatTimer StatTimer_cuda(impl_str.c_str());
+        StatTimer_cuda.start();
+        SGD_nodesWithEdges_cuda(dga, step_size, cuda_ctx);
+        StatTimer_cuda.stop();
+      } else if (personality == CPU)
+      #endif
       galois::do_all(galois::iterate(nodesWithEdges),
                      SGD(&_graph, step_size, dga),
                      galois::loopname(syncSubstrate->get_run_identifier("SGD").c_str()),
@@ -351,7 +360,7 @@ int main(int argc, char** argv) {
     if ((run + 1) != numRuns) {
 #ifdef __GALOIS_HET_CUDA__
       if (personality == GPU_CUDA) {
-        // bitset_dist_current_reset_cuda(cuda_ctx);
+        bitset_residual_latent_vector_reset_cuda(cuda_ctx);
       } else
 #endif
         (*syncSubstrate).set_num_run(run + 1);
