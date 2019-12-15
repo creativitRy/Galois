@@ -135,22 +135,22 @@ __global__ void BFS(CSRGraph graph, unsigned int __begin, unsigned int __end, do
           dst = graph.getAbsDestination(jj);
           double old_dp = 0;
           for(int i = 0; i < LATENT_VECTOR_SIZE; i++)
-            old_dp += latent_vector[src][i] * latent_vector[dst][i];
+            old_dp += latent_vector[src * LATENT_VECTOR_SIZE + i] * latent_vector[dst * LATENT_VECTOR_SIZE + i];
           
           double cur_error = edge_rating - old_dp;
           error.reduce(cur_error * cur_error);
 
           for (int i = 0; i < LATENT_VECTOR_SIZE; ++i) {
 
-            double prevUser  = latent_vector[dst][i];
-            double prevMovie = latent_vector[src][i];
+            double prevUser  = latent_vector[dst * LATENT_VECTOR_SIZE + i];
+            double prevMovie = latent_vector[src * LATENT_VECTOR_SIZE + i];
 
             atomicTestAdd(
-                &residual_latent_vector[dst][i],
+                &residual_latent_vector[dst * LATENT_VECTOR_SIZE + i],
                 double(step_size * (cur_error * prevMovie - LAMBDA * prevUser)));
     
             atomicTestAdd(
-                &residual_latent_vector[dst][i],
+                &residual_latent_vector[src * LATENT_VECTOR_SIZE + i],
                 double(step_size * (cur_error * prevUser - LAMBDA * prevMovie)));
           }
           bitset_residual.set(src);
@@ -193,22 +193,22 @@ __global__ void BFS(CSRGraph graph, unsigned int __begin, unsigned int __end, do
             dst = graph.getAbsDestination(jj);
             double old_dp = 0;
             for(int i = 0; i < LATENT_VECTOR_SIZE; i++)
-              old_dp += latent_vector[src][i] * latent_vector[dst][i];
+              old_dp += latent_vector[src * LATENT_VECTOR_SIZE + i] * latent_vector[dst * LATENT_VECTOR_SIZE + i];
             
             double cur_error = edge_rating - old_dp;
             error.reduce(cur_error * cur_error);
   
             for (int i = 0; i < LATENT_VECTOR_SIZE; ++i) {
   
-              double prevUser  = latent_vector[dst][i];
-              double prevMovie = latent_vector[src][i];
+              double prevUser  = latent_vector[dst * LATENT_VECTOR_SIZE + i];
+              double prevMovie = latent_vector[src * LATENT_VECTOR_SIZE + i];
   
               atomicTestAdd(
-                  &residual_latent_vector[dst][i],
+                  &residual_latent_vector[dst * LATENT_VECTOR_SIZE + i],
                   double(step_size * (cur_error * prevMovie - LAMBDA * prevUser)));
       
               atomicTestAdd(
-                  &residual_latent_vector[dst][i],
+                  &residual_latent_vector[src * LATENT_VECTOR_SIZE + i],
                   double(step_size * (cur_error * prevUser - LAMBDA * prevMovie)));
             }
             bitset_residual.set(src);
@@ -241,22 +241,22 @@ __global__ void BFS(CSRGraph graph, unsigned int __begin, unsigned int __end, do
           dst = graph.getAbsDestination(jj);
           double old_dp = 0;
           for(int i = 0; i < LATENT_VECTOR_SIZE; i++)
-            old_dp += latent_vector[src][i] * latent_vector[dst][i];
+            old_dp += latent_vector[src * LATENT_VECTOR_SIZE + i] * latent_vector[dst * LATENT_VECTOR_SIZE + i];
           
           double cur_error = edge_rating - old_dp;
           error.reduce(cur_error * cur_error);
 
           for (int i = 0; i < LATENT_VECTOR_SIZE; ++i) {
 
-            double prevUser  = latent_vector[dst][i];
-            double prevMovie = latent_vector[src][i];
+            double prevUser  = latent_vector[dst * LATENT_VECTOR_SIZE + i];
+            double prevMovie = latent_vector[src * LATENT_VECTOR_SIZE + i];
 
             atomicTestAdd(
-                &residual_latent_vector[dst][i],
+                &residual_latent_vector[dst * LATENT_VECTOR_SIZE + i],
                 double(step_size * (cur_error * prevMovie - LAMBDA * prevUser)));
     
             atomicTestAdd(
-                &residual_latent_vector[dst][i],
+                &residual_latent_vector[src * LATENT_VECTOR_SIZE + i],
                 double(step_size * (cur_error * prevUser - LAMBDA * prevMovie)));
           }
           bitset_residual.set(src);
@@ -318,8 +318,8 @@ __global__ void SGD_InitializeGraph(CSRGraph graph, unsigned int __begin, unsign
     if (pop)
     {
       for(int i = 0; i < LATENT_VECTOR_SIZE; i++) {
-        residual_latent_vector[src][i] = 0;
-        latent_vector[src][i] = Rand(-1.0, 1.0);
+        residual_latent_vector[src * LATENT_VECTOR_SIZE + i] = 0;
+        latent_vector[src * LATENT_VECTOR_SIZE + i] = Rand(-1.0, 1.0);
       }
     }
   }
@@ -367,8 +367,8 @@ __global__ void SGD_mergeResidual(CSRGraph graph, unsigned int __begin, unsigned
     if (pop)
     {
         for (int i = 0; i < LATENT_VECTOR_SIZE; ++i) {
-            latent_vector[src][i] += residual_latent_vector[src][i];
-            residual_latent_vector[src][i] = 0;
+            latent_vector[src * LATENT_VECTOR_SIZE + i] += residual_latent_vector[src * LATENT_VECTOR_SIZE + i];
+            residual_latent_vector[src * LATENT_VECTOR_SIZE + i] = 0;
             bitset_residual.set(src);
       }
     }
