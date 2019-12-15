@@ -211,3 +211,46 @@ size_t mem_usage_CUDA_field(struct CUDA_Context_Field<Type>* field,
   mem_usage += ((g.nnodes + 63) / 64) * sizeof(unsigned long long int);
   return mem_usage;
 }
+
+
+template <typename Type>
+void load_graph_CUDA_vector_field(struct CUDA_Context_Common* ctx,
+                           struct CUDA_Context_Field<Type>* field,
+                           unsigned num_hosts, unsigned int vector_size) {
+  field->data.alloc(ctx->gg.nnodes * vector_size);
+  size_t max_shared_size = 0; // for union across master/mirror of all hosts
+  for (uint32_t h = 0; h < num_hosts; ++h) {
+    if (ctx->master.num_nodes[h] > max_shared_size) {
+      max_shared_size = ctx->master.num_nodes[h];
+    }
+  }
+  for (uint32_t h = 0; h < num_hosts; ++h) {
+    if (ctx->mirror.num_nodes[h] > max_shared_size) {
+      max_shared_size = ctx->mirror.num_nodes[h];
+    }
+  }
+  field->shared_data.alloc(max_shared_size);
+  field->is_updated.alloc(1);
+  field->is_updated.cpu_wr_ptr()->alloc(ctx->gg.nnodes);
+}
+
+template <typename Type>
+size_t mem_usage_CUDA_vector_field(struct CUDA_Context_Field<Type>* field,
+                            MarshalGraph& g, unsigned num_hosts, unsigned int vector_size) {
+  size_t mem_usage = 0;
+  mem_usage += g.nnodes * sizeof(Type) * vector_size;
+  size_t max_shared_size = 0; // for union across master/mirror of all hosts
+  for (uint32_t h = 0; h < num_hosts; ++h) {
+    if (g.num_master_nodes[h] > max_shared_size) {
+      max_shared_size = g.num_master_nodes[h];
+    }
+  }
+  for (uint32_t h = 0; h < num_hosts; ++h) {
+    if (g.num_mirror_nodes[h] > max_shared_size) {
+      max_shared_size = g.num_mirror_nodes[h];
+    }
+  }
+  mem_usage += max_shared_size * sizeof(Type);
+  mem_usage += ((g.nnodes + 63) / 64) * sizeof(unsigned long long int);
+  return mem_usage;
+}
