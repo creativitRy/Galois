@@ -51,7 +51,7 @@ void bitset_residual_latent_vector_reset_cuda(struct CUDA_Context* ctx, size_t b
 	reset_bitset_field(&ctx->residual_latent_vector, begin, end);
 }
 
-double* get_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID) {
+std::vector<galois::CopyableAtomic<double>> get_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID) {
 	double **residual_latent_vector = ctx->residual_latent_vector.data.cpu_rd_ptr();
 	return residual_latent_vector[LID];
 }
@@ -63,21 +63,11 @@ void set_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID
     }
 }
 
-void add_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID, uint32_t v) {
+void pair_wise_add_array_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID, uint32_t v) {
 	double **residual_latent_vector = ctx->residual_latent_vector.data.cpu_wr_ptr();
     for(int i = 0; i < LATENT_VECTOR_SIZE; i++) {
         residual_latent_vector[i] += v[i];
     }
-}
-
-bool min_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID, uint32_t v) {
-	/*uint32_t *residual_latent_vector = ctx->residual_latent_vector.data.cpu_wr_ptr();
-	if (residual_latent_vector[LID] > v){
-		residual_latent_vector[LID] = v;
-		return true;
-	}
-    return false;*/
-    //TODO
 }
 
 void batch_get_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v) {
@@ -130,100 +120,5 @@ void batch_min_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsign
 
 void batch_reset_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, size_t begin, size_t end, double* v) {
 	reset_data_field<double*>(&ctx->residual_latent_vector, begin, end, v);
-}
-
-
-
-void get_bitset_latent_vector_cuda(struct CUDA_Context* ctx, uint64_t* bitset_compute) {
-	ctx->latent_vector.is_updated.cpu_rd_ptr()->copy_to_cpu(bitset_compute);
-}
-
-void bitset_latent_vector_reset_cuda(struct CUDA_Context* ctx) {
-	ctx->latent_vector.is_updated.cpu_rd_ptr()->reset();
-}
-
-void bitset_latent_vector_reset_cuda(struct CUDA_Context* ctx, size_t begin, size_t end) {
-	reset_bitset_field(&ctx->latent_vector, begin, end);
-}
-
-double* get_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID) {
-	double **latent_vector = ctx->latent_vector.data.cpu_rd_ptr();
-	return latent_vector[LID];
-}
-
-void set_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID, double* v) {
-	double **latent_vector = ctx->latent_vector.data.cpu_wr_ptr();
-    for(int i = 0; i < LATENT_VECTOR_SIZE; i++) {
-        latent_vector[i] = v[i];
-    }
-}
-
-void add_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID, uint32_t v) {
-	double **latent_vector = ctx->latent_vector.data.cpu_wr_ptr();
-    for(int i = 0; i < LATENT_VECTOR_SIZE; i++) {
-        latent_vector[i] += v[i];
-    }
-}
-
-bool min_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID, uint32_t v) {
-	/*uint32_t *latent_vector = ctx->latent_vector.data.cpu_wr_ptr();
-	if (latent_vector[LID] > v){
-		latent_vector[LID] = v;
-		return true;
-	}
-    return false;*/
-    //TODO
-}
-
-void batch_get_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v) {
-	batch_get_shared_field<double*, sharedMaster, false>(ctx, &ctx->latent_vector, from_id, v);
-}
-
-void batch_get_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode) {
-	batch_get_shared_field<double*, sharedMaster, false>(ctx, &ctx->latent_vector, from_id, v, v_size, data_mode);
-}
-
-void batch_get_mirror_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v) {
-	batch_get_shared_field<double*, sharedMirror, false>(ctx, &ctx->latent_vector, from_id, v);
-}
-
-void batch_get_mirror_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode) {
-	batch_get_shared_field<double*, sharedMirror, false>(ctx, &ctx->latent_vector, from_id, v, v_size, data_mode);
-}
-
-void batch_get_reset_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, double* i) {
-	batch_get_shared_field<double*, sharedMirror, true>(ctx, &ctx->latent_vector, from_id, v, i);
-}
-
-void batch_get_reset_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode, double* i) {
-	batch_get_shared_field<double*, sharedMirror, true>(ctx, &ctx->latent_vector, from_id, v, v_size, data_mode, i);
-}
-
-void batch_set_mirror_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, DataCommMode data_mode) {
-	batch_set_shared_field<double*, sharedMirror, setOp>(ctx, &ctx->latent_vector, from_id, v, data_mode);
-}
-
-void batch_set_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, DataCommMode data_mode) {
-	batch_set_shared_field<double*, sharedMaster, setOp>(ctx, &ctx->latent_vector, from_id, v, data_mode);
-}
-
-void batch_add_mirror_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, DataCommMode data_mode) {
-	batch_set_shared_field<double*, sharedMirror, addOp>(ctx, &ctx->latent_vector, from_id, v, data_mode);
-}
-
-void batch_add_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, DataCommMode data_mode) {
-	batch_set_shared_field<double*, sharedMaster, addOp>(ctx, &ctx->latent_vector, from_id, v, data_mode);
-}
-
-void batch_min_mirror_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, DataCommMode data_mode) {
-	batch_set_shared_field<double*, sharedMirror, minOp>(ctx, &ctx->latent_vector, from_id, v, data_mode);
-}
-
-void batch_min_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, DataCommMode data_mode) {
-	batch_set_shared_field<double*, sharedMaster, minOp>(ctx, &ctx->latent_vector, from_id, v, data_mode);
-}
-
-void batch_reset_node_latent_vector_cuda(struct CUDA_Context* ctx, size_t begin, size_t end, double* v) {
-	reset_data_field<double*>(&ctx->latent_vector, begin, end, v);
 }
 
