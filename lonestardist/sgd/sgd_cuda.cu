@@ -152,9 +152,6 @@ __global__ void SGD(CSRGraph graph, unsigned int __begin, unsigned int __end, do
             atomicTestAdd(
                 &residual_latent_vector[src * LATENT_VECTOR_SIZE + i],
                 double(step_size * (cur_error * prevUser - LAMBDA * prevMovie)));
-
-          //if(threadIdx.x == 0)
-          //    printf("step %d cur_error %f prevUser %f prevMovie %f resi_dst %f resi_src %f\n",step_size, cur_error,prevUser,prevMovie, residual_latent_vector[dst * LATENT_VECTOR_SIZE + i], residual_latent_vector[src * LATENT_VECTOR_SIZE + i]);
           }
           bitset_residual.set(src);
           bitset_residual.set(dst);
@@ -422,7 +419,6 @@ void SGD_cuda(unsigned int  __begin, unsigned int  __end, double& error, double 
   Shared<double> error_val  = Shared<double>(1);
   *(error_val.cpu_wr_ptr()) = 0;
   _error.rv = error_val.gpu_wr_ptr();
-  printf("step_size: %f", step_size);
   if (enable_lb)
   {
     t_work.reset_thread_work();
