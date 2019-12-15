@@ -44,7 +44,7 @@
 
 enum SharedType { sharedMaster, sharedMirror };
 enum UpdateOp { setOp, addOp, minOp };
-enum UpdateVectorOp { setArrOp, avgArrOp, addArrOp, addSingleOp };
+enum UpdateVectorOp {setArrOp, avgArrOp, addArrOp, addSingleOp};
 
 void kernel_sizing(dim3& blocks, dim3& threads) {
   threads.x = 256;
@@ -116,12 +116,28 @@ __global__ void batch_get_vector_subset(index_type subset_size,
 }
 
 template <typename DataType>
+__global__ void batch_get_reset_subset(index_type subset_size,
+                                       const unsigned int* __restrict__ indices,
+                                       DataType* __restrict__ subset,
+                                       DataType* __restrict__ array,
+                                       DataType reset_value) {
+  unsigned tid       = TID_1D;
+  unsigned nthreads  = TOTAL_THREADS_1D;
+  index_type src_end = subset_size;
+  for (index_type src = 0 + tid; src < src_end; src += nthreads) {
+    unsigned index = indices[src];
+    subset[src]    = array[index];
+    array[index]   = reset_value;
+  }
+}
+
+template <typename DataType>
 __global__ void batch_get_reset_vector_subset(index_type subset_size,
                                        const unsigned int* __restrict__ indices,
                                        DataType* __restrict__ subset,
                                        DataType* __restrict__ array,
-                                       DataType reset_value,
-                                       unsigned int array_value) {
+                                       unsigned int vector_size,
+                                       DataType reset_value) {
   unsigned tid       = TID_1D;
   unsigned nthreads  = TOTAL_THREADS_1D;
   index_type src_end = subset_size;
@@ -737,7 +753,7 @@ void batch_get_vector_shared_field(struct CUDA_Context_Common* ctx,
     shared_data->copy_to_cpu(temp, v_size * vector_size);
 
     for(unsigned int i = 0; i < v_size; i++) {
-        std::vector<DataType> vec();
+        std::vector<DataType> vec;
         vec.resize(vector_size);
         memcpy(&vec[0], &temp[vector_size * i], vector_size * sizeof(DataType));
         memcpy(send_buffer + sizeof(data_mode) + sizeof(v_size) + sizeof(vec) * i, &vec, sizeof(vec));
@@ -843,7 +859,7 @@ void serializeMessage_vector(struct CUDA_Context_Common* ctx, DataCommMode data_
   shared_data->copy_to_cpu(temp, bit_set_count * vector_size);
 
   for(unsigned int i = 0; i < bit_set_count; i++) {
-      std::vector<DataType> vec();
+      std::vector<DataType> vec;
       vec.resize(vector_size);
       memcpy(&vec[0], &temp[vector_size * i], vector_size * sizeof(DataType));
       memcpy(send_buffer + offset + sizeof(vec) * i, &vec, sizeof(vec));
@@ -1005,8 +1021,7 @@ void batch_get_shared_vector_field(struct CUDA_Context_Common* ctx,
 template <typename DataType>
 void deserializeMessage(struct CUDA_Context_Common* ctx, DataCommMode data_mode,
                       size_t& bit_set_count, size_t num_shared,
-                      DeviceOnly<DataType>* shared_data, uint8_t* recv_buffer,
-                      unsigned int vector_size) {
+                      DeviceOnly<DataType>* shared_data, uint8_t* recv_buffer) {
   size_t offset = 0; // data_mode is already deserialized
 
   if (data_mode != onlyData) {
@@ -1049,7 +1064,8 @@ void deserializeMessage(struct CUDA_Context_Common* ctx, DataCommMode data_mode,
 template <typename DataType>
 void deserializeMessage_vector(struct CUDA_Context_Common* ctx, DataCommMode data_mode,
                         size_t& bit_set_count, size_t num_shared,
-                        DeviceOnly<DataType>* shared_data, uint8_t* recv_buffer) {
+                        DeviceOnly<DataType>* shared_data, uint8_t* recv_buffer,
+                        unsigned int vector_size) {
     size_t offset = 0; // data_mode is already deserialized
 
     if (data_mode != onlyData) {
@@ -1087,7 +1103,8 @@ void deserializeMessage_vector(struct CUDA_Context_Common* ctx, DataCommMode dat
     offset += sizeof(bit_set_count);
     DataType* temp = calloc(sizeof(DataType), bit_set_count * vector_size);
     for(unsigned int i = 0; i < bit_set_count; i++) {
-        std::vector<DataType>* vec = reinterpret_cast<std::vector<DataType>*>((recv_buffer + offset + sizeof((std::vector<DataType>)) * i));
+      
+        std::vector<DataType>* vec = reinterpret_cast<std::vector<DataType>*>(recv_buffer + offset + sizeof(std::vector<DataType>) * i);
         memcpy(temp + vector_size * i, &((*vec)[0]), vector_size * sizeof(DataType));
     }
     //offset += bit_set_count * sizeof(DataType);
