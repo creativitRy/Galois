@@ -47,7 +47,7 @@ namespace cll = llvm::cl;
 static cll::opt<unsigned int>
     maxIterations("maxIterations",
                   cll::desc("Maximum iterations: Default 10000"),
-                  cll::init(10000));
+                  cll::init(1000));
 static cll::opt<double>
     LEARNING_RATE("LEARNING_RATE",
                   cll::desc("Learning rate (GAMMA): Default 0.00001"),
@@ -74,7 +74,7 @@ const unsigned int infinity = std::numeric_limits<unsigned int>::max() / 4;
 
 struct NodeData {
 
-  std::vector<galois::CopyableAtomic<double>> residual_latent_vector;
+  std::vector<double> residual_latent_vector;
   std::vector<double> latent_vector;
 };
 
@@ -230,13 +230,14 @@ struct SGD {
       auto step_size = getstep_size(_num_iterations);
       syncSubstrate->set_num_round(_num_iterations);
       dga.reset();
-
       #ifdef __GALOIS_HET_CUDA__
       if (personality == GPU_CUDA) {
         std::string impl_str(syncSubstrate->get_run_identifier("InitializeGraph"));
         galois::StatTimer StatTimer_cuda(impl_str.c_str());
         StatTimer_cuda.start();
-        SGD_nodesWithEdges_cuda(dga, step_size, cuda_ctx);
+        double __retval = 0;
+        SGD_nodesWithEdges_cuda(__retval, step_size, cuda_ctx);
+        dga += __retval;
         StatTimer_cuda.stop();
       } else if (personality == CPU)
       #endif
@@ -299,15 +300,15 @@ struct SGD {
         double prevUser  = user_node[i];
         double prevMovie = movie_node[i];
 
-        galois::atomicAdd(
+        galois::add(
             residual_user_node[i],
             double(step_size * (cur_error * prevMovie - LAMBDA * prevUser)));
-        assert(std::isnormal(residual_user_node[i].load()));
+        assert(std::isnormal(residual_user_node[i]));
 
-        galois::atomicAdd(
+        galois::add(
             residual_movie_node[i],
             double(step_size * (cur_error * prevUser - LAMBDA * prevMovie)));
-        assert(std::isnormal(residual_movie_node[i].load()));
+        assert(std::isnormal(residual_movie_node[i]));
       }
     }
   }

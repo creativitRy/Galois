@@ -18,7 +18,7 @@ static const int __tb_SGD = TB_SIZE;
 static const int __tb_InitializeGraph = TB_SIZE;
 
 
-__global__ void SGD(CSRGraph graph, unsigned int __begin, unsigned int __end, double * residual_latent_vector, DynamicBitset& bitset_residual, double* latent_vector, HGAccumulator<double> error, unsigned int step_size, bool enable_lb)
+__global__ void SGD(CSRGraph graph, unsigned int __begin, unsigned int __end, double * residual_latent_vector, DynamicBitset& bitset_residual, double* latent_vector, HGAccumulator<double> error, double step_size, bool enable_lb)
 {
   unsigned tid = TID_1D;
   unsigned nthreads = TOTAL_THREADS_1D;
@@ -152,6 +152,9 @@ __global__ void SGD(CSRGraph graph, unsigned int __begin, unsigned int __end, do
             atomicTestAdd(
                 &residual_latent_vector[src * LATENT_VECTOR_SIZE + i],
                 double(step_size * (cur_error * prevUser - LAMBDA * prevMovie)));
+
+          //if(threadIdx.x == 0)
+          //    printf("step %d cur_error %f prevUser %f prevMovie %f resi_dst %f resi_src %f\n",step_size, cur_error,prevUser,prevMovie, residual_latent_vector[dst * LATENT_VECTOR_SIZE + i], residual_latent_vector[src * LATENT_VECTOR_SIZE + i]);
           }
           bitset_residual.set(src);
           bitset_residual.set(dst);
@@ -275,7 +278,7 @@ __global__ void SGD(CSRGraph graph, unsigned int __begin, unsigned int __end, do
 
 
 
-__global__ void Inspect_SGD(CSRGraph graph, unsigned int __begin, unsigned int __end, double * residual_latent_vector, DynamicBitset& bitset_residual, double* latent_vector, HGAccumulator<double> error, unsigned int step_size, PipeContextT<Worklist2> thread_work_wl, PipeContextT<Worklist2> thread_src_wl, bool enable_lb)
+__global__ void Inspect_SGD(CSRGraph graph, unsigned int __begin, unsigned int __end, double * residual_latent_vector, DynamicBitset& bitset_residual, double* latent_vector, HGAccumulator<double> error, double step_size, PipeContextT<Worklist2> thread_work_wl, PipeContextT<Worklist2> thread_src_wl, bool enable_lb)
 {
   unsigned tid = TID_1D;
   unsigned nthreads = TOTAL_THREADS_1D;
@@ -325,8 +328,9 @@ __global__ void SGD_InitializeGraph(CSRGraph graph, unsigned int __begin, unsign
     bool pop  = src < __end;
     if (pop)
     {
-      double rand = (curand_uniform_double(&s) * 2.0) - 1.0;
+
       for(int i = 0; i < LATENT_VECTOR_SIZE; i++) {
+        double rand = (curand_uniform_double(&s) * 2.0) - 1.0;
         residual_latent_vector[src * LATENT_VECTOR_SIZE + i] = 0;
         latent_vector[src * LATENT_VECTOR_SIZE + i] = rand;
       }
@@ -409,15 +413,16 @@ void SGD_mergeResidual_nodesWithEdges_cuda(struct CUDA_Context*  ctx)
   SGD_mergeResidual_cuda(0, ctx->numNodesWithEdges, ctx);
 }
 
-void SGD_cuda(unsigned int  __begin, unsigned int  __end, double& error, unsigned int step_size, struct CUDA_Context*  ctx)
+void SGD_cuda(unsigned int  __begin, unsigned int  __end, double& error, double step_size, struct CUDA_Context*  ctx)
 {
   dim3 blocks;
   dim3 threads;
   HGAccumulator<double> _error;
   kernel_sizing(blocks, threads);
-  Shared<double> error_val  = Shared<double>(0.0);
+  Shared<double> error_val  = Shared<double>(1);
   *(error_val.cpu_wr_ptr()) = 0;
   _error.rv = error_val.gpu_wr_ptr();
+  printf("step_size: %f", step_size);
   if (enable_lb)
   {
     t_work.reset_thread_work();
@@ -438,17 +443,17 @@ void SGD_cuda(unsigned int  __begin, unsigned int  __end, double& error, unsigne
   error = *(error_val.cpu_rd_ptr());
 }
 
-void SGD_allNodes_cuda(double& error, unsigned int step_size, struct CUDA_Context*  ctx)
+void SGD_allNodes_cuda(double& error, double step_size, struct CUDA_Context*  ctx)
 {
   SGD_cuda(0, ctx->gg.nnodes, error, step_size,  ctx);
 }
 
-void SGD_masterNodes_cuda(double& error, unsigned int step_size, struct CUDA_Context*  ctx)
+void SGD_masterNodes_cuda(double& error, double step_size, struct CUDA_Context*  ctx)
 {
   SGD_cuda(ctx->beginMaster, ctx->beginMaster + ctx->numOwned, error, step_size, ctx);
 }
 
-void SGD_nodesWithEdges_cuda(double& error, unsigned int step_size, struct CUDA_Context*  ctx)
+void SGD_nodesWithEdges_cuda(double& error, double step_size, struct CUDA_Context*  ctx)
 {
   SGD_cuda(0, ctx->numNodesWithEdges, error, step_size, ctx);
 }

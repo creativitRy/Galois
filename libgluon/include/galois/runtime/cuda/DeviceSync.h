@@ -623,7 +623,7 @@ void reset_data_field_vector(struct CUDA_Context_Field<DataType>* field, size_t 
   dim3 blocks;
   dim3 threads;
   kernel_sizing(blocks, threads);
-
+  printf("reset_data_field_vector");
   batch_vector_reset<DataType><<<blocks, threads>>>(
       field->data.gpu_wr_ptr(), (index_type)begin, (index_type)end, val, vector_size);
 }
@@ -718,6 +718,7 @@ void batch_get_shared_vector_field(struct CUDA_Context_Common* ctx,
                             unsigned  int vector_size,
                             DataType initial_value = 0) {
     struct CUDA_Context_Shared* shared;
+    printf("batch_get_shared_vector_field");
     if (sharedType == sharedMaster) {
         shared = &ctx->master;
     } else { // sharedMirror
@@ -750,7 +751,9 @@ void batch_get_shared_vector_field(struct CUDA_Context_Common* ctx,
 
     DataType *temp = (DataType*) calloc(sizeof(DataType), vector_size * v_size);
 
+    //printf("batch_get_shared_vector_field %d %d %d\n", v_size, vector_size);
     shared_data->copy_to_cpu(temp, v_size * vector_size);
+    //printf("batch_get_shared_vector_field %d\n");
 
     for(unsigned int i = 0; i < v_size; i++) {
         std::vector<DataType> vec;
@@ -821,7 +824,7 @@ void serializeMessage_vector(struct CUDA_Context_Common* ctx, DataCommMode data_
     // do nothing
     return;
   }
-
+  printf("serializeMessage_vector");
   size_t offset = 0;
 
   // serialize data_mode
@@ -856,6 +859,7 @@ void serializeMessage_vector(struct CUDA_Context_Common* ctx, DataCommMode data_
   offset += sizeof(bit_set_count);
   DataType *temp = (DataType*) calloc(sizeof(DataType), vector_size * bit_set_count);
 
+  //printf("serializeMessage_vector\n");
   shared_data->copy_to_cpu(temp, bit_set_count * vector_size);
 
   for(unsigned int i = 0; i < bit_set_count; i++) {
@@ -951,6 +955,7 @@ void batch_get_shared_vector_field(struct CUDA_Context_Common* ctx,
                             unsigned int vector_size,
                             DataType i = 0) {
   struct CUDA_Context_Shared* shared;
+  printf("batch_get_shared_vector_field\n");
   if (sharedType == sharedMaster) {
     shared = &ctx->master;
   } else { // sharedMirror
@@ -1067,7 +1072,7 @@ void deserializeMessage_vector(struct CUDA_Context_Common* ctx, DataCommMode dat
                         DeviceOnly<DataType>* shared_data, uint8_t* recv_buffer,
                         unsigned int vector_size) {
     size_t offset = 0; // data_mode is already deserialized
-
+    printf("deserializeMessage_vector\n");
     if (data_mode != onlyData) {
         // deserialize bit_set_count
         memcpy(&bit_set_count, recv_buffer + offset, sizeof(bit_set_count));
@@ -1100,6 +1105,7 @@ void deserializeMessage_vector(struct CUDA_Context_Common* ctx, DataCommMode dat
     }
 
     // deserialize data vector
+    printf("deserializeMessage_vector bit count: %d %d\n", bit_set_count, vector_size);
     offset += sizeof(bit_set_count);
     DataType* temp = (DataType*) calloc(sizeof(DataType), bit_set_count * vector_size);
     for(unsigned int i = 0; i < bit_set_count; i++) {
@@ -1107,10 +1113,11 @@ void deserializeMessage_vector(struct CUDA_Context_Common* ctx, DataCommMode dat
         std::vector<DataType>* vec = reinterpret_cast<std::vector<DataType>*>(recv_buffer + offset + sizeof(std::vector<DataType>) * i);
         memcpy(temp + vector_size * i, &((*vec)[0]), vector_size * sizeof(DataType));
     }
+    printf("deserializeMessage_vector loop finished\n");
     //offset += bit_set_count * sizeof(DataType);
     shared_data->copy_to_gpu(temp, bit_set_count * vector_size);
     free(temp);
-
+    printf("deserializeMessage_vector finished\n");
 }
 
 template <typename DataType, SharedType sharedType, UpdateOp op>
@@ -1203,6 +1210,7 @@ void batch_set_shared_vector_field(struct CUDA_Context_Common* ctx,
                             DataCommMode data_mode,
                             unsigned int vector_size) {
   assert(data_mode != noData);
+  printf("batch_set_shared_vector_field\n");
   struct CUDA_Context_Shared* shared;
   if (sharedType == sharedMaster) {
     shared = &ctx->master;

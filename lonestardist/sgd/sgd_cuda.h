@@ -59,7 +59,7 @@ void SDG_InitializeGraph_cuda(unsigned int  __begin, unsigned int  __end, struct
 void SGD_InitializeGraph_allNodes_cuda(struct CUDA_Context*  ctx);
 void SGD_InitializeGraph_masterNodes_cuda(struct CUDA_Context*  ctx);
 void SGD_InitializeGraph_nodesWithEdges_cuda(struct CUDA_Context*  ctx);
-void SGD_cuda(unsigned int  __begin, unsigned int  __end, unsigned int & error, unsigned int step_size, struct CUDA_Context*  ctx);
-void SGD_allNodes_cuda(double& error, unsigned int step_size, struct CUDA_Context*  ctx);
-void SGD_masterNodes_cuda(double& error, unsigned int step_size, struct CUDA_Context*  ctx);
-void SGD_nodesWithEdges_cuda(double& error, unsigned int step_size, struct CUDA_Context*  ctx);
+void SGD_cuda(unsigned int  __begin, unsigned int  __end, unsigned int & error, double step_size, struct CUDA_Context*  ctx);
+void SGD_allNodes_cuda(double& error, double step_size, struct CUDA_Context*  ctx);
+void SGD_masterNodes_cuda(double& error, double step_size, struct CUDA_Context*  ctx);
+void SGD_nodesWithEdges_cuda(double& error, double step_size, struct CUDA_Context*  ctx);

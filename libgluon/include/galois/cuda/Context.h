@@ -229,7 +229,7 @@ void load_graph_CUDA_vector_field(struct CUDA_Context_Common* ctx,
       max_shared_size = ctx->mirror.num_nodes[h];
     }
   }
-  field->shared_data.alloc(max_shared_size);
+  field->shared_data.alloc(max_shared_size * vector_size);
   field->is_updated.alloc(1);
   field->is_updated.cpu_wr_ptr()->alloc(ctx->gg.nnodes);
 }

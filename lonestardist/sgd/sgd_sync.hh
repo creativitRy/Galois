@@ -25,15 +25,15 @@
 
 typedef galois::CopyableArray<double, LATENT_VECTOR_SIZE> ArrTy;
 typedef galois::CopyableArray<galois::CopyableAtomic<double>, LATENT_VECTOR_SIZE> ArrAtomicTy;
-typedef std::vector<galois::CopyableAtomic<double>> VecAtomicTy;
+typedef std::vector<double> VecAtomicTy;
 typedef std::vector<double> VecTy;
 
 //GALOIS_SYNC_STRUCTURE_REDUCE_SET(residual_latent_vector, ArrAtomicTy);
 //GALOIS_SYNC_STRUCTURE_REDUCE_PAIR_WISE_ADD_ARRAY(residual_latent_vector, ArrAtomicTy);
 
 //New vector type
-GALOIS_SYNC_STRUCTURE_REDUCE_SET(residual_latent_vector, VecAtomicTy);
-GALOIS_SYNC_STRUCTURE_REDUCE_PAIR_WISE_ADD_ARRAY(residual_latent_vector, VecAtomicTy);
+GALOIS_SYNC_STRUCTURE_REDUCE_SET(residual_latent_vector, VecTy);
+GALOIS_SYNC_STRUCTURE_REDUCE_PAIR_WISE_ADD_ARRAY(residual_latent_vector, VecTy);
 
 
 //GALOIS_SYNC_STRUCTURE_REDUCE_PAIR_WISE_AVG_ARRAY(residual_latent_vector, ArrAtomicTy);
