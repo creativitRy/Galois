@@ -4,7 +4,7 @@
 #include "cub/cub.cuh"
 #include "cub/util_allocator.cuh"
 #include "thread_work.h"
-
+#include <curand_kernel.h>
 
 
 #define TB_SIZE 256
@@ -18,7 +18,7 @@ static const int __tb_SGD = TB_SIZE;
 static const int __tb_InitializeGraph = TB_SIZE;
 
 
-__global__ void BFS(CSRGraph graph, unsigned int __begin, unsigned int __end, double * residual_latent_vector, DynamicBitset& bitset_residual, double* latent_vector, HGAccumulator<double> error, bool enable_lb)
+__global__ void SGD(CSRGraph graph, unsigned int __begin, unsigned int __end, double * residual_latent_vector, DynamicBitset& bitset_residual, double* latent_vector, HGAccumulator<double> error, bool enable_lb)
 {
   unsigned tid = TID_1D;
   unsigned nthreads = TOTAL_THREADS_1D;
