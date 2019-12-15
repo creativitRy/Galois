@@ -1643,11 +1643,18 @@ public:
       return false;                                                            \
     }                                                                          \
                                                                                \
-    static bool reset_batch(size_t begin, size_t end) { return false; }        \
+    static bool reset_batch(size_t begin, size_t end) {                        \
+      if (personality == GPU_CUDA) {                                           \
+        batch_reset_node_##fieldname##_cuda(cuda_ctx, begin, end, (ValTy::value_type) 0);   \
+        return true;                                                           \
+      }                                                                        \
+      assert(personality == CPU);                                              \
+      return false;                                                            \
+    }                                                                          \
                                                                                \
     static bool reduce(uint32_t node_id, struct NodeData& node, ValTy y) {     \
       if (personality == GPU_CUDA) {                                           \
-        set_node_##fieldname##_cuda(cuda_ctx, node_id, y);                     \
+        pair_wise_avg_array_node_##fieldname##_cuda(cuda_ctx, node_id, y);                     \
         return true;                                                           \
       }                                                                        \
       assert(personality == CPU);                                              \
@@ -1660,7 +1667,7 @@ public:
     static bool reduce_batch(unsigned from_id,   \
                              uint8_t* y, DataCommMode data_mode) {     \
       if (personality == GPU_CUDA) {                                           \
-        batch_set_node_##fieldname##_cuda(cuda_ctx, from_id, y,       \
+        batch_pair_wise_avg_array_node_##fieldname##_cuda(cuda_ctx, from_id, y,       \
                                           data_mode);                          \
         return true;                                                           \
       }                                                                        \
@@ -1671,7 +1678,7 @@ public:
     static bool reduce_mirror_batch(unsigned from_id,   \
                              uint8_t* y, DataCommMode data_mode) {     \
       if (personality == GPU_CUDA) {                                           \
-        batch_set_mirror_node_##fieldname##_cuda(cuda_ctx, from_id, y,       \
+        batch_pair_wise_avg_array_mirror_node_##fieldname##_cuda(cuda_ctx, from_id, y,       \
                                           data_mode);                          \
         return true;                                                           \
       }                                                                        \
@@ -1680,7 +1687,10 @@ public:
     }                                                                          \
                                                                                \
     static void reset(uint32_t node_id, struct NodeData& node) {               \
-      { galois::resetVec(node.fieldname); }                                    \
+      if (personality == GPU_CUDA) {                                           \
+        reset_vector_node_##fieldname##_cuda(cuda_ctx, node_id, (ValTy::value_type) 0);              \
+      } else if (personality == CPU)                                           \
+        galois::resetVec(node.fieldname);                                      \
     }                                                                          \
                                                                                \
     static void setVal(uint32_t node_id, struct NodeData& node, ValTy y) {     \
@@ -1766,6 +1776,130 @@ public:
  * Creates a Galois reduction sync structure that does a pairwise
  * sum reduction on an array.
  */
+#ifdef __GALOIS_HET_CUDA__
+// GPU code included
+#define GALOIS_SYNC_STRUCTURE_REDUCE_PAIR_WISE_ADD_ARRAY(fieldname, fieldtype) \
+  struct Reduce_pair_wise_add_array_##fieldname {                              \
+    typedef fieldtype ValTy;                                                   \
+                                                                               \
+    static ValTy extract(uint32_t node_id, const struct NodeData& node) {      \
+      if (personality == GPU_CUDA)                                             \
+        return get_node_##fieldname##_cuda(cuda_ctx, node_id);                 \
+      assert(personality == CPU);                                              \
+      return node.fieldname;                                                   \
+    }                                                                          \
+                                                                               \
+    static bool extract_batch(unsigned from_id,                                \
+                                    uint8_t* y, size_t* s,                     \
+                                    DataCommMode* data_mode) {                 \
+      if (personality == GPU_CUDA) {                                           \
+        batch_get_node_##fieldname##_cuda(cuda_ctx, from_id, y, s, data_mode); \
+        return true;                                                           \
+      }                                                                        \
+      assert(personality == CPU);                                              \
+      return false;                                                            \
+    }                                                                          \
+                                                                               \
+    static bool extract_batch(unsigned from_id, uint8_t* y) {                  \
+      if (personality == GPU_CUDA) {                                           \
+        batch_get_node_##fieldname##_cuda(cuda_ctx, from_id, y);               \
+        return true;                                                           \
+      }                                                                        \
+      assert(personality == CPU);                                              \
+      return false;                                                            \
+    }                                                                          \
+                                                                               \
+    static bool extract_reset_batch(unsigned from_id,             \
+                                    uint8_t* y, size_t* s,      \
+                                    DataCommMode* data_mode) {                 \
+      if (personality == GPU_CUDA) {                                           \
+        batch_get_mirror_node_##fieldname##_cuda(cuda_ctx, from_id, y,   \
+                                                 s, data_mode);                \
+        return true;                                                           \
+      }                                                                        \
+      assert(personality == CPU);                                              \
+      return false;                                                            \
+    }                                                                          \
+                                                                               \
+    static bool extract_reset_batch(unsigned from_id, uint8_t* y) {              \
+      if (personality == GPU_CUDA) {                                           \
+        batch_get_mirror_node_##fieldname##_cuda(cuda_ctx, from_id, y);        \
+        return true;                                                           \
+      }                                                                        \
+      assert(personality == CPU);                                              \
+      return false;                                                            \
+    }                                                                          \
+                                                                               \
+    static bool reset_batch(size_t begin, size_t end) {                        \
+      if (personality == GPU_CUDA) {                                           \
+        batch_reset_node_##fieldname##_cuda(cuda_ctx, begin, end, (ValTy::value_type) 0);   \
+        return true;                                                           \
+      }                                                                        \
+      assert(personality == CPU);                                              \
+      return false;                                                            \
+    }        \
+                                                                               \
+    static bool reduce(uint32_t node_id, struct NodeData& node, ValTy y) {     \
+      if (personality == GPU_CUDA) {                                           \
+        pair_wise_add_array_node_##fieldname##_cuda(cuda_ctx, node_id, y);                     \
+        return true;                                                           \
+      }                                                                        \
+      assert(personality == CPU);                                              \
+      {                                                                        \
+        galois::pairWiseAvg_vec(node.fieldname, y);                            \
+        return true;                                                           \
+      }                                                                        \
+    }                                                                          \
+                                                                               \
+    static bool reduce_batch(unsigned from_id,   \
+                             uint8_t* y, DataCommMode data_mode) {     \
+      if (personality == GPU_CUDA) {                                           \
+        batch_pair_wise_add_array_node_##fieldname##_cuda(cuda_ctx, from_id, y,       \
+                                          data_mode);                          \
+        return true;                                                           \
+      }                                                                        \
+      assert(personality == CPU);                                              \
+      return false;                                                            \
+    }                                                                          \
+                                                                               \
+    static bool reduce_mirror_batch(unsigned from_id,   \
+                             uint8_t* y, DataCommMode data_mode) {     \
+      if (personality == GPU_CUDA) {                                           \
+        batch_pair_wise_add_array_mirror_node_##fieldname##_cuda(cuda_ctx, from_id, y,       \
+                                          data_mode);                          \
+        return true;                                                           \
+      }                                                                        \
+      assert(personality == CPU);                                              \
+      return false;                                                            \
+    }                                                                          \
+                                                                               \
+    static void reset(uint32_t node_id, struct NodeData& node) {               \
+      if (personality == GPU_CUDA) {                                           \
+        reset_vector_node_##fieldname##_cuda(cuda_ctx, node_id, (ValTy::value_type) 0);              \
+      } else if (personality == CPU)                                           \
+        galois::resetVec(node.fieldname);                                      \
+    }                                                                          \
+                                                                               \
+    static void setVal(uint32_t node_id, struct NodeData& node, ValTy y) {     \
+      if (personality == GPU_CUDA)                                             \
+        set_node_##fieldname##_cuda(cuda_ctx, node_id, y);                     \
+      else if (personality == CPU)                                             \
+        node.fieldname = y;                                                    \
+    }                                                                          \
+                                                                               \
+    static bool setVal_batch(unsigned from_id,   \
+                             uint8_t* y, DataCommMode data_mode) {     \
+      if (personality == GPU_CUDA) {                                           \
+        batch_set_mirror_node_##fieldname##_cuda(cuda_ctx, from_id, y,   \
+                                                 data_mode);                \
+        return true;                                                           \
+      }                                                                        \
+      assert(personality == CPU);                                              \
+      return false;                                                            \
+    }                                                                          \
+  }
+#else
+// Non-GPU code
 #define GALOIS_SYNC_STRUCTURE_REDUCE_PAIR_WISE_ADD_ARRAY(fieldname, fieldtype) \
   struct Reduce_pair_wise_add_array_##fieldname {                              \
     typedef fieldtype ValTy;                                                   \
@@ -1823,11 +1957,13 @@ public:
       return false;                                                            \
     }                                                                          \
   }
+#endif
 
 /**
  * Creates a Galois reduction sync structure that does a pairwise
  * sum reduction on an array on a SINGLE element.
  */
+// Non-GPU code
 #define GALOIS_SYNC_STRUCTURE_REDUCE_PAIR_WISE_ADD_ARRAY_SINGLE(fieldname,     \
                                                                 fieldtype)     \
   struct Reduce_pair_wise_add_array_single_##fieldname {                       \
