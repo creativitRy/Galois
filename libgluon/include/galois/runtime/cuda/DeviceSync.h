@@ -1227,12 +1227,12 @@ void batch_set_shared_vector_field(struct CUDA_Context_Common* ctx,
           v_size, shared->nodes[from_id].device_ptr(),
           shared_data->device_ptr(), field->data.gpu_wr_ptr(),
           field->is_updated.gpu_wr_ptr(), vector_size);
-    } else if (op == avgArrOp) {//todo
+    } else if (op == avgArrOp) {
       batch_avg_vector_subset<DataType, sharedType><<<blocks, threads>>>(
           v_size, shared->nodes[from_id].device_ptr(),
           shared_data->device_ptr(), field->data.gpu_wr_ptr(),
           field->is_updated.gpu_wr_ptr(), vector_size);
-    } else if (op == addArrOp) {//todo
+    } else if (op == addArrOp) {
       batch_add_vector_subset<DataType, sharedType><<<blocks, threads>>>(
           v_size, shared->nodes[from_id].device_ptr(),
           shared_data->device_ptr(), field->data.gpu_wr_ptr(),
@@ -1243,11 +1243,11 @@ void batch_set_shared_vector_field(struct CUDA_Context_Common* ctx,
       batch_set_vector_subset<DataType, sharedType><<<blocks, threads>>>(
           v_size, ctx->offsets.device_ptr(), shared_data->device_ptr(),
           field->data.gpu_wr_ptr(), field->is_updated.gpu_wr_ptr(), vector_size);
-    } else if (op == avgArrOp) {//todo
+    } else if (op == avgArrOp) {
       batch_avg_vector_subset<DataType, sharedType><<<blocks, threads>>>(
           v_size, ctx->offsets.device_ptr(), shared_data->device_ptr(),
           field->data.gpu_wr_ptr(), field->is_updated.gpu_wr_ptr(), vector_size);
-    } else if (op == addArrOp) {//todo
+    } else if (op == addArrOp) {
       batch_add_vector_subset<DataType, sharedType><<<blocks, threads>>>(
           v_size, ctx->offsets.device_ptr(), shared_data->device_ptr(),
           field->data.gpu_wr_ptr(), field->is_updated.gpu_wr_ptr(), vector_size);
@@ -1258,12 +1258,12 @@ void batch_set_shared_vector_field(struct CUDA_Context_Common* ctx,
           v_size, shared->nodes[from_id].device_ptr(),
           ctx->offsets.device_ptr(), shared_data->device_ptr(),
           field->data.gpu_wr_ptr(), field->is_updated.gpu_wr_ptr(), vector_size);
-    } else if (op == avgArrOp) {//todo
+    } else if (op == avgArrOp) {
       batch_add_vector_subset<DataType, sharedType><<<blocks, threads>>>(
           v_size, shared->nodes[from_id].device_ptr(),
           ctx->offsets.device_ptr(), shared_data->device_ptr(),
           field->data.gpu_wr_ptr(), field->is_updated.gpu_wr_ptr(), vector_size);
-    } else if (op == addArrOp) {//todo
+    } else if (op == addArrOp) {
       batch_add_vector_subset<DataType, sharedType><<<blocks, threads>>>(
           v_size, shared->nodes[from_id].device_ptr(),
           ctx->offsets.device_ptr(), shared_data->device_ptr(),
