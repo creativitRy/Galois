@@ -44,3 +44,20 @@ void batch_add_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_i
 void batch_min_mirror_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, DataCommMode data_mode);
 void batch_min_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, DataCommMode data_mode);
 void batch_reset_node_latent_vector_cuda(struct CUDA_Context* ctx, size_t begin, size_t end, double* v);
+
+
+
+void SGD_mergeResidual_cuda(unsigned int  __begin, unsigned int  __end, struct CUDA_Context*  ctx);
+void SGD_mergeResidual_allNodes_cuda(struct CUDA_Context*  ctx);
+void SGD_mergeResidual_masterNodes_cuda(struct CUDA_Context*  ctx);
+void SGD_mergeResidual_nodesWithEdges_cuda(struct CUDA_Context*  ctx);
+
+void SDG_InitializeGraph_cuda(unsigned int  __begin, unsigned int  __end, struct CUDA_Context*  ctx);
+void SGD_InitializeGraph_allNodes_cuda(struct CUDA_Context*  ctx);
+void SGD_InitializeGraph_masterNodes_cuda(struct CUDA_Context*  ctx);
+void SGD_InitializeGraph_nodesWithEdges_cuda(struct CUDA_Context*  ctx);
+
+void SGD_cuda(unsigned int  __begin, unsigned int  __end, unsigned int & error, unsigned int step_size, struct CUDA_Context*  ctx);
+void SGD_allNodes_cuda(double& error, unsigned int step_size, struct CUDA_Context*  ctx);
+void SGD_masterNodes_cuda(double& error, unsigned int step_size, struct CUDA_Context*  ctx);
+void SGD_nodesWithEdges_cuda(double& error, unsigned int step_size, struct CUDA_Context*  ctx);

@@ -18,7 +18,7 @@ static const int __tb_SGD = TB_SIZE;
 static const int __tb_InitializeGraph = TB_SIZE;
 
 
-__global__ void BFS(CSRGraph graph, unsigned int __begin, unsigned int __end, double ** residual_latent_vector, DynamicBitset& bitset_residual, double** latent_vector, HGAccumulator<double> error, bool enable_lb)
+__global__ void BFS(CSRGraph graph, unsigned int __begin, unsigned int __end, double * residual_latent_vector, DynamicBitset& bitset_residual, double* latent_vector, HGAccumulator<double> error, bool enable_lb)
 {
   unsigned tid = TID_1D;
   unsigned nthreads = TOTAL_THREADS_1D;
@@ -275,7 +275,7 @@ __global__ void BFS(CSRGraph graph, unsigned int __begin, unsigned int __end, do
 
 
 
-__global__ void Inspect_SGD(CSRGraph graph, unsigned int __begin, unsigned int __end, double ** residual_latent_vector, DynamicBitset& bitset_residual, double** latent_vector, HGAccumulator<unsigned int> error, unsigned int step_size, PipeContextT<Worklist2> thread_work_wl, PipeContextT<Worklist2> thread_src_wl, bool enable_lb)
+__global__ void Inspect_SGD(CSRGraph graph, unsigned int __begin, unsigned int __end, double * residual_latent_vector, DynamicBitset& bitset_residual, double* latent_vector, HGAccumulator<unsigned int> error, unsigned int step_size, PipeContextT<Worklist2> thread_work_wl, PipeContextT<Worklist2> thread_src_wl, bool enable_lb)
 {
   unsigned tid = TID_1D;
   unsigned nthreads = TOTAL_THREADS_1D;
@@ -304,12 +304,20 @@ __global__ void Inspect_SGD(CSRGraph graph, unsigned int __begin, unsigned int _
   }
 }
 
-__global__ void SGD_InitializeGraph(CSRGraph graph, unsigned int __begin, unsigned int __end, double** residual_latent_vector, double** latent_vector)
+__global__ void SGD_InitializeGraph(CSRGraph graph, unsigned int __begin, unsigned int __end, double* residual_latent_vector, double* latent_vector)
 {
   unsigned tid = TID_1D;
   unsigned nthreads = TOTAL_THREADS_1D;
 
   const unsigned __kernel_tb_size = TB_SIZE;
+
+  unsigned int seed = TID_1D;
+
+  curandState s;
+
+    // seed a random number generator
+  curand_init(seed, 0, 0, &s);
+
   index_type src_end;
   src_end = __end;
   for (index_type src = __begin + tid; src < src_end; src += nthreads)
@@ -317,9 +325,10 @@ __global__ void SGD_InitializeGraph(CSRGraph graph, unsigned int __begin, unsign
     bool pop  = src < __end;
     if (pop)
     {
+      double rand = (curand_uniform_double(&s) * 2.0) - 1.0;
       for(int i = 0; i < LATENT_VECTOR_SIZE; i++) {
         residual_latent_vector[src * LATENT_VECTOR_SIZE + i] = 0;
-        latent_vector[src * LATENT_VECTOR_SIZE + i] = Rand(-1.0, 1.0);
+        latent_vector[src * LATENT_VECTOR_SIZE + i] = rand;
       }
     }
   }
@@ -354,7 +363,7 @@ void SGD_InitializeGraph_nodesWithEdges_cuda(struct CUDA_Context*  ctx)
 
 
 
-__global__ void SGD_mergeResidual(CSRGraph graph, unsigned int __begin, unsigned int __end, double ** residual_latent_vector, DynamicBitset& bitset_residual, double** latent_vector)
+__global__ void SGD_mergeResidual(CSRGraph graph, unsigned int __begin, unsigned int __end, double * residual_latent_vector, DynamicBitset& bitset_residual, double* latent_vector)
 {
   unsigned tid = TID_1D;
   unsigned nthreads = TOTAL_THREADS_1D;
@@ -389,14 +398,17 @@ void SGD_mergeResidual_cuda(unsigned int  __begin, unsigned int  __end, struct C
   check_cuda_kernel;
   active_vertices = *(active_verticesval.cpu_rd_ptr());
 }
+
 void SGD_mergeResidual_allNodes_cuda(struct CUDA_Context*  ctx)
 {
   SGD_mergeResidual_cuda(0, ctx->gg.nnodes, ctx);
 }
+
 void SGD_mergeResidual_masterNodes_cuda(struct CUDA_Context*  ctx)
 {
   SGD_mergeResidual_cuda(ctx->beginMaster, ctx);
 }
+
 void SGD_mergeResidual_nodesWithEdges_cuda(struct CUDA_Context*  ctx)
 {
   SGD_mergeResidual_cuda(0, ctx->numNodesWithEdges, active_vertices, local_alpha, local_tolerance, ctx);
