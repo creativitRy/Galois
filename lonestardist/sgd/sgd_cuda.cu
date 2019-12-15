@@ -13,12 +13,12 @@
 struct ThreadWork t_work;
 bool enable_lb = false;
 #include "kernels/reduce.cuh"
-#include "pagerank_pull_cuda.cuh"
+#include "sgd_cuda.cuh"
 static const int __tb_SGD = TB_SIZE;
 static const int __tb_InitializeGraph = TB_SIZE;
 
 
-__global__ void SGD(CSRGraph graph, unsigned int __begin, unsigned int __end, double * residual_latent_vector, DynamicBitset& bitset_residual, double* latent_vector, HGAccumulator<double> error, bool enable_lb)
+__global__ void SGD(CSRGraph graph, unsigned int __begin, unsigned int __end, double * residual_latent_vector, DynamicBitset& bitset_residual, double* latent_vector, HGAccumulator<double> error, unsigned int step_size, bool enable_lb)
 {
   unsigned tid = TID_1D;
   unsigned nthreads = TOTAL_THREADS_1D;
@@ -275,7 +275,7 @@ __global__ void SGD(CSRGraph graph, unsigned int __begin, unsigned int __end, do
 
 
 
-__global__ void Inspect_SGD(CSRGraph graph, unsigned int __begin, unsigned int __end, double * residual_latent_vector, DynamicBitset& bitset_residual, double* latent_vector, HGAccumulator<unsigned int> error, unsigned int step_size, PipeContextT<Worklist2> thread_work_wl, PipeContextT<Worklist2> thread_src_wl, bool enable_lb)
+__global__ void Inspect_SGD(CSRGraph graph, unsigned int __begin, unsigned int __end, double * residual_latent_vector, DynamicBitset& bitset_residual, double* latent_vector, HGAccumulator<double> error, unsigned int step_size, PipeContextT<Worklist2> thread_work_wl, PipeContextT<Worklist2> thread_src_wl, bool enable_lb)
 {
   unsigned tid = TID_1D;
   unsigned nthreads = TOTAL_THREADS_1D;
@@ -334,14 +334,14 @@ __global__ void SGD_InitializeGraph(CSRGraph graph, unsigned int __begin, unsign
   }
 }
 
-void SDG_InitializeGraph_cuda(unsigned int  __begin, unsigned int  __end, struct CUDA_Context*  ctx)
+void SGD_InitializeGraph_cuda(unsigned int  __begin, unsigned int  __end, struct CUDA_Context*  ctx)
 {
   t_work.init_thread_work(ctx->gg.nnodes);
   dim3 blocks;
   dim3 threads;
 
   kernel_sizing(blocks, threads);
-  SGD_InitializeGraph <<<blocks, threads>>>(ctx->gg, __begin, __end, local_infinity, local_src_node, ctx->residual_latent_vector.data.gpu_wr_ptr(), ctx->latent_vector.data.gpu_wr_ptr());
+  SGD_InitializeGraph <<<blocks, threads>>>(ctx->gg, __begin, __end, ctx->residual_latent_vector.data.gpu_wr_ptr(), ctx->latent_vector.data.gpu_wr_ptr());
   cudaDeviceSynchronize();
   check_cuda_kernel;
 }
@@ -369,7 +369,7 @@ __global__ void SGD_mergeResidual(CSRGraph graph, unsigned int __begin, unsigned
   unsigned nthreads = TOTAL_THREADS_1D;
 
   const unsigned __kernel_tb_size = TB_SIZE;
-  src_end = __end;
+  index_type src_end = __end;
   for (index_type src = __begin + tid; src < src_end; src += nthreads)
   {
     bool pop  = src < __end;
@@ -388,15 +388,10 @@ void SGD_mergeResidual_cuda(unsigned int  __begin, unsigned int  __end, struct C
 {
   dim3 blocks;
   dim3 threads;
-  HGAccumulator<unsigned int> _active_vertices;
   kernel_sizing(blocks, threads);
-  Shared<unsigned int> active_verticesval  = Shared<unsigned int>(1);
-  *(active_verticesval.cpu_wr_ptr()) = 0;
-  _active_vertices.rv = active_verticesval.gpu_wr_ptr();
   SGD_mergeResidual <<<blocks, threads>>>(ctx->gg, __begin, __end, ctx->residual_latent_vector.data.gpu_wr_ptr(), *(ctx->residual_latent_vector.is_updated.gpu_rd_ptr()), ctx->latent_vector.data.gpu_wr_ptr());
   cudaDeviceSynchronize();
   check_cuda_kernel;
-  active_vertices = *(active_verticesval.cpu_rd_ptr());
 }
 
 void SGD_mergeResidual_allNodes_cuda(struct CUDA_Context*  ctx)
@@ -406,19 +401,19 @@ void SGD_mergeResidual_allNodes_cuda(struct CUDA_Context*  ctx)
 
 void SGD_mergeResidual_masterNodes_cuda(struct CUDA_Context*  ctx)
 {
-  SGD_mergeResidual_cuda(ctx->beginMaster, ctx);
+  SGD_mergeResidual_cuda(ctx->beginMaster, ctx->beginMaster + ctx->numOwned, ctx);
 }
 
 void SGD_mergeResidual_nodesWithEdges_cuda(struct CUDA_Context*  ctx)
 {
-  SGD_mergeResidual_cuda(0, ctx->numNodesWithEdges, active_vertices, local_alpha, local_tolerance, ctx);
+  SGD_mergeResidual_cuda(0, ctx->numNodesWithEdges, ctx);
 }
 
-void SGD_cuda(unsigned int  __begin, unsigned int  __end, unsigned int & error, unsigned int step_size, struct CUDA_Context*  ctx)
+void SGD_cuda(unsigned int  __begin, unsigned int  __end, double& error, unsigned int step_size, struct CUDA_Context*  ctx)
 {
   dim3 blocks;
   dim3 threads;
-  HGAccumulator<unsigned int> _error;
+  HGAccumulator<double> _error;
   kernel_sizing(blocks, threads);
   Shared<double> error_val  = Shared<double>(0.0);
   *(error_val.cpu_wr_ptr()) = 0;
@@ -437,7 +432,7 @@ void SGD_cuda(unsigned int  __begin, unsigned int  __end, unsigned int & error, 
       cudaDeviceSynchronize();
     }
   }
-  SGD <<<blocks, __tb_SGD>>>(ctx->gg, __begin, __end, ctx->residual_latent_vector.data.gpu_wr_ptr(), *(ctx->residual_latent_vector.is_updated.gpu_rd_ptr()), _error, step_size, enable_lb);
+  SGD <<<blocks, __tb_SGD>>>(ctx->gg, __begin, __end, ctx->residual_latent_vector.data.gpu_wr_ptr(), *(ctx->residual_latent_vector.is_updated.gpu_rd_ptr()), ctx->latent_vector.data.gpu_wr_ptr(), _error, step_size, enable_lb);
   cudaDeviceSynchronize();
   check_cuda_kernel;
   error = *(error_val.cpu_rd_ptr());

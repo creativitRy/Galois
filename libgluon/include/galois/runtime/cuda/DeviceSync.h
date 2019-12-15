@@ -709,14 +709,14 @@ void batch_get_shared_field(struct CUDA_Context_Common* ctx,
  * @param from_id
  * @param send_buffer
  * @param vector_size
- * @param i
+ * @param initial_value
  */
 template <typename DataType, SharedType sharedType, bool reset>
-void batch_get_vector_shared_field(struct CUDA_Context_Common* ctx,
+void batch_get_shared_vector_field(struct CUDA_Context_Common* ctx,
                             struct CUDA_Context_Field<DataType>* field,
                             unsigned from_id, uint8_t* send_buffer,
                             unsigned  int vector_size,
-                            DataType i = 0) {
+                            DataType initial_value = 0) {
     struct CUDA_Context_Shared* shared;
     if (sharedType == sharedMaster) {
         shared = &ctx->master;
@@ -735,7 +735,7 @@ void batch_get_vector_shared_field(struct CUDA_Context_Common* ctx,
     if (reset) {
         batch_get_reset_vector_subset<DataType><<<blocks, threads>>>(
                 v_size, shared->nodes[from_id].device_ptr(), shared_data->device_ptr(),
-                        field->data.gpu_wr_ptr(),vector_size, i);
+                        field->data.gpu_wr_ptr(),vector_size, initial_value);
     } else {
         batch_get_vector_subset<DataType><<<blocks, threads>>>(
                 v_size, shared->nodes[from_id].device_ptr(), shared_data->device_ptr(),
@@ -748,7 +748,7 @@ void batch_get_vector_shared_field(struct CUDA_Context_Common* ctx,
     memcpy(send_buffer, &data_mode, sizeof(data_mode));
     memcpy(send_buffer + sizeof(data_mode), &v_size, sizeof(v_size));
 
-    DataType *temp = calloc(sizeof(DataType), vector_size * v_size);
+    DataType *temp = (DataType*) calloc(sizeof(DataType), vector_size * v_size);
 
     shared_data->copy_to_cpu(temp, v_size * vector_size);
 
@@ -854,7 +854,7 @@ void serializeMessage_vector(struct CUDA_Context_Common* ctx, DataCommMode data_
   // serialize data vector
   memcpy(send_buffer + offset, &bit_set_count, sizeof(bit_set_count));
   offset += sizeof(bit_set_count);
-  DataType *temp = calloc(sizeof(DataType), vector_size * bit_set_count);
+  DataType *temp = (DataType*) calloc(sizeof(DataType), vector_size * bit_set_count);
 
   shared_data->copy_to_cpu(temp, bit_set_count * vector_size);
 
@@ -1007,7 +1007,7 @@ void batch_get_shared_vector_field(struct CUDA_Context_Common* ctx,
   check_cuda_kernel;
   // timer3.stop();
   // timer4.start();
-  serializeMessage_vector(ctx, *data_mode, *v_size, shared->num_nodes[from_id], shared_data, send_buffer);
+  serializeMessage_vector(ctx, *data_mode, *v_size, shared->num_nodes[from_id], shared_data, send_buffer, vector_size);
   // timer4.stop();
   // timer.stop();
   // fprintf(stderr, "Get %u->%u: %d mode %u bitset %u indices. Time (ms): %llu
@@ -1101,7 +1101,7 @@ void deserializeMessage_vector(struct CUDA_Context_Common* ctx, DataCommMode dat
 
     // deserialize data vector
     offset += sizeof(bit_set_count);
-    DataType* temp = calloc(sizeof(DataType), bit_set_count * vector_size);
+    DataType* temp = (DataType*) calloc(sizeof(DataType), bit_set_count * vector_size);
     for(unsigned int i = 0; i < bit_set_count; i++) {
       
         std::vector<DataType>* vec = reinterpret_cast<std::vector<DataType>*>(recv_buffer + offset + sizeof(std::vector<DataType>) * i);

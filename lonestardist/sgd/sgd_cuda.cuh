@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "bfs_pull_cuda.h"
+#include "sgd_cuda.h"
 #include "galois/runtime/cuda/DeviceSync.h"
 
 #define RESIDUAL_LATENT_VECTOR_SIZE 20
@@ -110,11 +110,11 @@ void batch_get_mirror_node_residual_latent_vector_cuda(struct CUDA_Context* ctx,
     batch_get_shared_vector_field<double, sharedMirror, false>(ctx, &ctx->residual_latent_vector, from_id, v, v_size, data_mode, RESIDUAL_LATENT_VECTOR_SIZE);
 }
 
-void batch_get_reset_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, double* i) {
+void batch_get_reset_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, double i) {
 	batch_get_shared_vector_field<double, sharedMirror, true>(ctx, &ctx->residual_latent_vector, from_id, v, RESIDUAL_LATENT_VECTOR_SIZE, i);
 }
 
-void batch_get_reset_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode, double* i) {
+void batch_get_reset_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode, double i) {
 	batch_get_shared_vector_field<double, sharedMirror, true>(ctx, &ctx->residual_latent_vector, from_id, v, v_size, data_mode, RESIDUAL_LATENT_VECTOR_SIZE, i);
 }
 
@@ -215,11 +215,11 @@ void batch_get_mirror_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned
     batch_get_shared_vector_field<double, sharedMirror, false>(ctx, &ctx->latent_vector, from_id, v, v_size, data_mode, LATENT_VECTOR_SIZE);
 }
 
-void batch_get_reset_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, double* i) {
+void batch_get_reset_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, double i) {
 	batch_get_shared_vector_field<double, sharedMirror, true>(ctx, &ctx->latent_vector, from_id, v, LATENT_VECTOR_SIZE, i);
 }
 
-void batch_get_reset_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode, double* i) {
+void batch_get_reset_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode, double i) {
 	batch_get_shared_vector_field<double, sharedMirror, true>(ctx, &ctx->latent_vector, from_id, v, v_size, data_mode, LATENT_VECTOR_SIZE, i);
 }
 
