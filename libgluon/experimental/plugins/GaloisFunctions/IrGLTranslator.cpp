@@ -168,8 +168,20 @@ public:
         end = text.find_first_not_of(VARIABLE_NAME_CHARACTERS, pos);
         if (end == std::string::npos)
           text.append("[" + nodeVar.second + "]");
-        else
-          text.insert(end, "[" + nodeVar.second + "]");
+        else {
+          if (isVectorType(SharedVariablesToTypeMap[nodeVar.first])) {
+            // replace [nodeVar.second][index] to [nodeVar.second * vector_length + index]
+            if (text[end] == '[') {
+              std::string vector_length = getVectorLengthConstantName(nodeVar.first);
+              text.erase(end, 1)
+              text.insert(end, "[" + nodeVar.second + " * vector_length + ");
+            } else {
+              text.insert(end, "[" + nodeVar.second + " * vector_length]");
+            }
+          } else {
+            text.insert(end, "[" + nodeVar.second + "]");
+          }
+        }
         text.insert(pos, "p_");
         pos = text.find(nodeVar.first);
       }
