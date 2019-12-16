@@ -17,8 +17,8 @@ void batch_get_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsign
 void batch_get_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode);
 void batch_get_mirror_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v);
 void batch_get_mirror_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode);
-void batch_get_reset_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, double* i);
-void batch_get_reset_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode, double* i);
+void batch_get_reset_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, double i);
+void batch_get_reset_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode, double i);
 void batch_set_mirror_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, DataCommMode data_mode);
 void batch_set_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, DataCommMode data_mode);
 void batch_pair_wise_avg_array_mirror_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, DataCommMode data_mode);
@@ -41,8 +41,8 @@ void batch_get_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_i
 void batch_get_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode);
 void batch_get_mirror_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v);
 void batch_get_mirror_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode);
-void batch_get_reset_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, double* i);
-void batch_get_reset_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode, double* i);
+void batch_get_reset_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, double i);
+void batch_get_reset_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode, double i);
 void batch_set_mirror_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, DataCommMode data_mode);
 void batch_set_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, DataCommMode data_mode);
 void batch_pair_wise_avg_array_mirror_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, DataCommMode data_mode);

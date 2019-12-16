@@ -31,8 +31,8 @@ void load_graph_CUDA(struct CUDA_Context* ctx, MarshalGraph &g, unsigned num_hos
 	mem_usage += mem_usage_CUDA_vector_field(&ctx->latent_vector, g, num_hosts, LATENT_VECTOR_SIZE);
 	printf("[%d] Host memory for communication context: %3u MB\n", ctx->id, mem_usage/1048756);
 	load_graph_CUDA_common(ctx, g, num_hosts);
-    load_graph_CUDA_vector_field(ctx, &ctx->residual_latent_vector, num_hosts, RESIDUAL_LATENT_VECTOR_SIZE);
-    load_graph_CUDA_vector_field(ctx, &ctx->latent_vector, num_hosts, LATENT_VECTOR_SIZE);
+	load_graph_CUDA_vector_field(ctx, &ctx->residual_latent_vector, num_hosts, RESIDUAL_LATENT_VECTOR_SIZE);
+	load_graph_CUDA_vector_field(ctx, &ctx->latent_vector, num_hosts, LATENT_VECTOR_SIZE);
 	reset_CUDA_context(ctx);
 }
 
@@ -55,59 +55,59 @@ void bitset_residual_latent_vector_reset_cuda(struct CUDA_Context* ctx, size_t b
 
 std::vector<double> get_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID) {
 	double *residual_latent_vector = ctx->residual_latent_vector.data.cpu_rd_ptr();
-    std::vector<double> v;
-    v.resize(RESIDUAL_LATENT_VECTOR_SIZE);
-    memcpy(&v[0], &residual_latent_vector[LID], sizeof(double) * RESIDUAL_LATENT_VECTOR_SIZE);
+	std::vector<double> v;
+	v.resize(RESIDUAL_LATENT_VECTOR_SIZE);
+	memcpy(&v[0], &residual_latent_vector[LID], sizeof(double) * RESIDUAL_LATENT_VECTOR_SIZE);
 	return v;
 }
 
 double get_element_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID, unsigned vecIndex) {
-    double *residual_latent_vector = ctx->residual_latent_vector.data.cpu_rd_ptr();
-    return residual_latent_vector[LID + vecIndex];
+	double *residual_latent_vector = ctx->residual_latent_vector.data.cpu_rd_ptr();
+	return residual_latent_vector[LID + vecIndex];
 }
 
 void set_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID, std::vector<double> v) {
 	double *residual_latent_vector = ctx->residual_latent_vector.data.cpu_wr_ptr();
-    memcpy(&residual_latent_vector[LID], &v[0], sizeof(double) * RESIDUAL_LATENT_VECTOR_SIZE);
+	memcpy(&residual_latent_vector[LID], &v[0], sizeof(double) * RESIDUAL_LATENT_VECTOR_SIZE);
 }
 
 void set_element_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID, unsigned vecIndex, double v) {
 	double *residual_latent_vector = ctx->residual_latent_vector.data.cpu_wr_ptr();
-    residual_latent_vector[LID + vecIndex] = v;
+	residual_latent_vector[LID + vecIndex] = v;
 }
 
 void reset_vector_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID, double v) {
 	double *residual_latent_vector = ctx->residual_latent_vector.data.cpu_wr_ptr();
-    for(int i = 0; i < RESIDUAL_LATENT_VECTOR_SIZE; ++i)
-        residual_latent_vector[LID + i] = v;
+	for(int i = 0; i < RESIDUAL_LATENT_VECTOR_SIZE; ++i)
+		residual_latent_vector[LID + i] = v;
 }
 
 void pair_wise_avg_array_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID, std::vector<double> v) {
-    double *residual_latent_vector = ctx->residual_latent_vector.data.cpu_wr_ptr();
-    for(int i = 0; i < RESIDUAL_LATENT_VECTOR_SIZE; ++i)
-        residual_latent_vector[LID + i] = (residual_latent_vector[LID + i] + v[i]) / (double) 2;
+	double *residual_latent_vector = ctx->residual_latent_vector.data.cpu_wr_ptr();
+	for(int i = 0; i < RESIDUAL_LATENT_VECTOR_SIZE; ++i)
+		residual_latent_vector[LID + i] = (residual_latent_vector[LID + i] + v[i]) / (double) 2;
 }
 
 void pair_wise_add_array_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID, std::vector<double> v) {
-    double *residual_latent_vector = ctx->residual_latent_vector.data.cpu_wr_ptr();
-    for(int i = 0; i < RESIDUAL_LATENT_VECTOR_SIZE; ++i)
-        residual_latent_vector[LID + i] = (double) (residual_latent_vector[LID + i] + v[i]);
+	double *residual_latent_vector = ctx->residual_latent_vector.data.cpu_wr_ptr();
+	for(int i = 0; i < RESIDUAL_LATENT_VECTOR_SIZE; ++i)
+		residual_latent_vector[LID + i] = (double) (residual_latent_vector[LID + i] + v[i]);
 }
 
 void batch_get_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v) {
-    batch_get_shared_vector_field<double, sharedMaster, false>(ctx, &ctx->residual_latent_vector, from_id, v, RESIDUAL_LATENT_VECTOR_SIZE);
+	batch_get_shared_vector_field<double, sharedMaster, false>(ctx, &ctx->residual_latent_vector, from_id, v, RESIDUAL_LATENT_VECTOR_SIZE);
 }
 
 void batch_get_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode) {
-    batch_get_shared_vector_field<double, sharedMaster, false>(ctx, &ctx->residual_latent_vector, from_id, v, v_size, data_mode, RESIDUAL_LATENT_VECTOR_SIZE);
+	batch_get_shared_vector_field<double, sharedMaster, false>(ctx, &ctx->residual_latent_vector, from_id, v, v_size, data_mode, RESIDUAL_LATENT_VECTOR_SIZE);
 }
 
 void batch_get_mirror_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v) {
-    batch_get_shared_vector_field<double, sharedMirror, false>(ctx, &ctx->residual_latent_vector, from_id, v, RESIDUAL_LATENT_VECTOR_SIZE);
+	batch_get_shared_vector_field<double, sharedMirror, false>(ctx, &ctx->residual_latent_vector, from_id, v, RESIDUAL_LATENT_VECTOR_SIZE);
 }
 
 void batch_get_mirror_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode) {
-    batch_get_shared_vector_field<double, sharedMirror, false>(ctx, &ctx->residual_latent_vector, from_id, v, v_size, data_mode, RESIDUAL_LATENT_VECTOR_SIZE);
+	batch_get_shared_vector_field<double, sharedMirror, false>(ctx, &ctx->residual_latent_vector, from_id, v, v_size, data_mode, RESIDUAL_LATENT_VECTOR_SIZE);
 }
 
 void batch_get_reset_node_residual_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, double i) {
@@ -160,59 +160,59 @@ void bitset_latent_vector_reset_cuda(struct CUDA_Context* ctx, size_t begin, siz
 
 std::vector<double> get_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID) {
 	double *latent_vector = ctx->latent_vector.data.cpu_rd_ptr();
-    std::vector<double> v;
-    v.resize(LATENT_VECTOR_SIZE);
-    memcpy(&v[0], &latent_vector[LID], sizeof(double) * LATENT_VECTOR_SIZE);
+	std::vector<double> v;
+	v.resize(LATENT_VECTOR_SIZE);
+	memcpy(&v[0], &latent_vector[LID], sizeof(double) * LATENT_VECTOR_SIZE);
 	return v;
 }
 
 double get_element_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID, unsigned vecIndex) {
-    double *latent_vector = ctx->latent_vector.data.cpu_rd_ptr();
-    return latent_vector[LID + vecIndex];
+	double *latent_vector = ctx->latent_vector.data.cpu_rd_ptr();
+	return latent_vector[LID + vecIndex];
 }
 
 void set_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID, std::vector<double> v) {
 	double *latent_vector = ctx->latent_vector.data.cpu_wr_ptr();
-    memcpy(&latent_vector[LID], &v[0], sizeof(double) * LATENT_VECTOR_SIZE);
+	memcpy(&latent_vector[LID], &v[0], sizeof(double) * LATENT_VECTOR_SIZE);
 }
 
 void set_element_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID, unsigned vecIndex, double v) {
 	double *latent_vector = ctx->latent_vector.data.cpu_wr_ptr();
-    latent_vector[LID + vecIndex] = v;
+	latent_vector[LID + vecIndex] = v;
 }
 
 void reset_vector_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID, double v) {
 	double *latent_vector = ctx->latent_vector.data.cpu_wr_ptr();
-    for(int i = 0; i < LATENT_VECTOR_SIZE; ++i)
-        latent_vector[LID + i] = v;
+	for(int i = 0; i < LATENT_VECTOR_SIZE; ++i)
+		latent_vector[LID + i] = v;
 }
 
 void pair_wise_avg_array_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID, std::vector<double> v) {
-    double *latent_vector = ctx->latent_vector.data.cpu_wr_ptr();
-    for(int i = 0; i < LATENT_VECTOR_SIZE; ++i)
-        latent_vector[LID + i] = (latent_vector[LID + i] + v[i]) / (double) 2;
+	double *latent_vector = ctx->latent_vector.data.cpu_wr_ptr();
+	for(int i = 0; i < LATENT_VECTOR_SIZE; ++i)
+		latent_vector[LID + i] = (latent_vector[LID + i] + v[i]) / (double) 2;
 }
 
 void pair_wise_add_array_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned LID, std::vector<double> v) {
-    double *latent_vector = ctx->latent_vector.data.cpu_wr_ptr();
-    for(int i = 0; i < LATENT_VECTOR_SIZE; ++i)
-        latent_vector[LID + i] = (double) (latent_vector[LID + i] + v[i]);
+	double *latent_vector = ctx->latent_vector.data.cpu_wr_ptr();
+	for(int i = 0; i < LATENT_VECTOR_SIZE; ++i)
+		latent_vector[LID + i] = (double) (latent_vector[LID + i] + v[i]);
 }
 
 void batch_get_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v) {
-    batch_get_shared_vector_field<double, sharedMaster, false>(ctx, &ctx->latent_vector, from_id, v, LATENT_VECTOR_SIZE);
+	batch_get_shared_vector_field<double, sharedMaster, false>(ctx, &ctx->latent_vector, from_id, v, LATENT_VECTOR_SIZE);
 }
 
 void batch_get_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode) {
-    batch_get_shared_vector_field<double, sharedMaster, false>(ctx, &ctx->latent_vector, from_id, v, v_size, data_mode, LATENT_VECTOR_SIZE);
+	batch_get_shared_vector_field<double, sharedMaster, false>(ctx, &ctx->latent_vector, from_id, v, v_size, data_mode, LATENT_VECTOR_SIZE);
 }
 
 void batch_get_mirror_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v) {
-    batch_get_shared_vector_field<double, sharedMirror, false>(ctx, &ctx->latent_vector, from_id, v, LATENT_VECTOR_SIZE);
+	batch_get_shared_vector_field<double, sharedMirror, false>(ctx, &ctx->latent_vector, from_id, v, LATENT_VECTOR_SIZE);
 }
 
 void batch_get_mirror_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, size_t* v_size, DataCommMode* data_mode) {
-    batch_get_shared_vector_field<double, sharedMirror, false>(ctx, &ctx->latent_vector, from_id, v, v_size, data_mode, LATENT_VECTOR_SIZE);
+	batch_get_shared_vector_field<double, sharedMirror, false>(ctx, &ctx->latent_vector, from_id, v, v_size, data_mode, LATENT_VECTOR_SIZE);
 }
 
 void batch_get_reset_node_latent_vector_cuda(struct CUDA_Context* ctx, unsigned from_id, uint8_t* v, double i) {
