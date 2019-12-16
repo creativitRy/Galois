@@ -17,7 +17,7 @@
  * Documentation, or loss or inaccuracy of data of any kind.
  */
 
-//Hello
+
 
 #include <iostream>
 #include <limits>
