@@ -47,7 +47,7 @@ namespace cll = llvm::cl;
 static cll::opt<unsigned int>
     maxIterations("maxIterations",
                   cll::desc("Maximum iterations: Default 10000"),
-                  cll::init(1000));
+                  cll::init(10000));
 static cll::opt<double>
     LEARNING_RATE("LEARNING_RATE",
                   cll::desc("Learning rate (GAMMA): Default 0.00001"),
