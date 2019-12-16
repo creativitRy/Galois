@@ -173,7 +173,7 @@ public:
             // replace [nodeVar.second][index] to [nodeVar.second * vector_length + index]
             if (text[end] == '[') {
               std::string vector_length = getVectorLengthConstantName(nodeVar.first);
-              text.erase(end, 1)
+              text.erase(end, 1);
               text.insert(end, "[" + nodeVar.second + " * vector_length + ");
             } else {
               text.insert(end, "[" + nodeVar.second + " * vector_length]");
