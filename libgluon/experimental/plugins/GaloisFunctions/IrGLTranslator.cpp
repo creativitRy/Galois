@@ -885,7 +885,14 @@ public:
     header.open(FileNamePath + "_cuda.h");
     header << "#pragma once\n\n";
     header << "#include \"galois/runtime/DataCommMode.h\"\n";
-    header << "#include \"galois/cuda/HostDecls.h\"\n\n";
+    header << "#include \"galois/cuda/HostDecls.h\"\n";
+    for (auto& var : SharedVariablesToTypeMap) {
+      if (isVectorType(var.second)) {
+        header << "#include \"" << filename << "_common.h\"\n";
+        break;
+      }
+    }
+    header << "\n";
     if (requiresWorklist) {
       header << "\nstruct CUDA_Worklist {\n";
       header << "\tint *in_items;\n";
