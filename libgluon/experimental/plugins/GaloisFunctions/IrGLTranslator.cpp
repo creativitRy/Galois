@@ -93,7 +93,7 @@ std::string getVectorValueType(std::string type) {
 std::string getVectorLengthConstantName(std::string variableName) {
   // _SIZE
   auto len = variableName.length();
-  char buf[len + 5];
+  char *buf = new char[len + 5];
   int index = 0;
   for (char const &c : variableName) {
     buf[index] = toupper(c);
@@ -104,7 +104,9 @@ std::string getVectorLengthConstantName(std::string variableName) {
   buf[len + 2] = 'I';
   buf[len + 3] = 'Z';
   buf[len + 4] = 'E';
-  return std::string(buf, len + 5);
+  std::string result(buf, len + 5);
+  delete buf;
+  return result;
 }
 
 class IrGLOperatorVisitor : public RecursiveASTVisitor<IrGLOperatorVisitor> {
@@ -169,14 +171,15 @@ public:
         if (end == std::string::npos)
           text.append("[" + nodeVar.second + "]");
         else {
-          if (isVectorType(SharedVariablesToTypeMap[nodeVar.first])) {
+          std::string variableName = text.substr(pos, end - pos);
+          if (SharedVariablesToTypeMap.find(variableName) == SharedVariablesToTypeMap.end() || isVectorType(SharedVariablesToTypeMap[variableName])) {
             // replace [nodeVar.second][index] to [nodeVar.second * vector_length + index]
             if (text[end] == '[') {
-              std::string vector_length = getVectorLengthConstantName(nodeVar.first);
+              std::string vector_length = getVectorLengthConstantName(variableName);
               text.erase(end, 1);
-              text.insert(end, "[" + nodeVar.second + " * vector_length + ");
+              text.insert(end, "[" + nodeVar.second + " * " + vector_length + " + ");
             } else {
-              text.insert(end, "[" + nodeVar.second + " * vector_length]");
+              text.insert(end, "[" + nodeVar.second + " * " + vector_length + "]");
             }
           } else {
             text.insert(end, "[" + nodeVar.second + "]");
